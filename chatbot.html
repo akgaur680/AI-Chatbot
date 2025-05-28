@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chatbot</title>
+    <style>
+      #chat-window {
+        display: none;
+        width: 360px;
+        height: 500px;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        margin-top: 10px;
+        /* display: flex; */
+        flex-direction: column;
+      }
+      #character-count {
+        margin: auto;
+        font-size: 15px;
+        color: #555;
+        padding: 3px;
+        z-index: 999;
+      }
+      .error-message {
+        color: red;
+        font-size: 15px;
+      }
+      #typing-indicator {
+        background: rgb(248, 248, 248);
+        padding-left: 1em;
+        padding-bottom: 0.2em;
+        font-size: 1.5em;
+      }
+
+      .jumping-dots {
+        margin: auto;
+      }
+      .jumping-dots span {
+        position: relative;
+        margin-left: auto;
+        margin-right: auto;
+        animation: jump 1s infinite;
+      }
+      .jumping-dots .dot-1 {
+        color: #844085;
+        animation-delay: 200ms;
+      }
+      .jumping-dots .dot-2 {
+        color: #844085;
+        animation-delay: 400ms;
+      }
+      .jumping-dots .dot-3 {
+        color: #844085;
+        animation-delay: 600ms;
+      }
+
+      @keyframes jump {
+        0% {
+          bottom: 0px;
+        }
+        20% {
+          bottom: 5px;
+        }
+        40% {
+          bottom: 0px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div
+      id="chatbot-container"
+      style="position: fixed; bottom: 20px; right: 20px; z-index: 9999"
+    >
+      <!-- Toggle Button -->
+      <button
+        id="chat-toggle-button"
+        onclick="toggleChat()"
+        style="
+          background-color: #17313a;
+          color: white;
+          padding: 12px 14px;
+          border: none;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          font-size: 18px;
+        "
+      >
+        💬
+      </button>
+
+      <!-- Chat Window -->
+      <div
+        id="chat-window"
+        style="
+          display: none;
+          width: 360px;
+          height: 500px;
+          background: #fff;
+          border-radius: 15px;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          margin-top: 10px;
+          flex-direction: column;
+        "
+      >
+        <!-- Header -->
+        <div
+          style="
+            background-color: #17313a;
+            color: white;
+            padding: 15px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            font-weight: bold;
+            text-align: center;
+          "
+        >
+          <img src="mvtLogo.png" alt="MVT Logo" width="30em" /> Chat Assistant
+        </div>
+
+        <!-- User Info Form -->
+        <div
+          id="user-form"
+          style="
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          "
+        >
+          <input
+            type="text"
+            id="user-name"
+            placeholder="Enter your name"
+            style="padding: 10px; border-radius: 10px; border: 1px solid #ccc"
+          />
+          <span class="error-message" id="error-name"></span>
+
+          <input
+            type="email"
+            id="user-email"
+            placeholder="Enter your email"
+            style="padding: 10px; border-radius: 10px; border: 1px solid #ccc"
+          />
+          <span class="error-message" id="error-email"></span>
+
+          <input
+            type="text"
+            id="user-mobile"
+            placeholder="Enter your Contact No."
+            style="padding: 10px; border-radius: 10px; border: 1px solid #ccc"
+          />
+          <span class="error-message" id="error-mobile"></span>
+
+          <button
+            onclick="startChat()"
+            style="
+              background-color: #17313a;
+              color: white;
+              padding: 10px;
+              border: none;
+              border-radius: 10px;
+              cursor: pointer;
+            "
+          >
+            Start Chat
+          </button>
+        </div>
+
+        <!-- Messages -->
+        <div
+          id="chat-messages"
+          style="
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background: #f8f8f8;
+            display: none;
+            position: relative;
+          "
+        ></div>
+        <!-- Typing Indicator -->
+        <!-- <div
+          id="typing-indicator"
+          style="
+            display: none;
+            font-style: italic;
+            color: #888;
+            margin: 6px 0;
+            position: absolute;
+            bottom: 0px;
+            left: 0px;
+          "
+        >
+          🤖 Typing...
+        </div> -->
+
+        <div id="typing-indicator" style="display: none">
+          <span class="jumping-dots">
+            <span class="dot-1">●</span>
+            <span class="dot-2">●</span>
+            <span class="dot-3">●</span>
+          </span>
+        </div>
+        <!-- Input Section -->
+        <div
+          id="chat-input-section"
+          style="display: none; border-top: 1px solid #ddd; padding: 10px"
+        >
+          <input
+            type="text"
+            id="chat-input"
+            maxlength="1000"
+            placeholder="Type your message..."
+            style="
+              flex: 1;
+              border: 1px solid #ccc;
+              border-radius: 20px;
+              padding: 8px 15px;
+              outline: none;
+              font-size: 14px;
+              width: 70%;
+            "
+            oninput="updateCharacterCount()"
+          />
+          <div id="character-count">0 / 99</div>
+          <button
+            onclick="sendMessage()"
+            style="
+              background-color: #17313a;
+              border: none;
+              color: white;
+              padding: 8px 16px;
+              border-radius: 20px;
+              margin-left: 10px;
+              font-size: 14px;
+              cursor: pointer;
+              /* display: none; */
+            "
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const chatInput = document.getElementById("chat-input");
+        const chatMessages = document.getElementById("chat-messages");
+        botTyping = true;
+        chatCounter = 0;
+        // Toggle Chat Window
+        window.toggleChat = function () {
+          const chat = document.getElementById("chat-window");
+          const chatButton = document.getElementById("chat-toggle-button");
+          chatButton.innerHTML =
+            chat.style.display === "flex" ? "💬" : "&#10005;";
+          chatButton.style.padding =
+            chat.style.display === "flex" ? "12px 14px" : "8px 14px";
+          chat.style.display = chat.style.display === "flex" ? "none" : "flex";
+        };
+
+        // Append message to chat window
+        window.appendMessage = function (
+          text,
+          sender = "user",
+          callback = null
+        ) {
+          if (!text.trim()) return;
+
+          const msg = document.createElement("div");
+          const msgText = document.createElement("div");
+          msg.appendChild(msgText);
+
+          // OUTER container styles
+          msg.style.margin = "6px 0";
+          msg.style.display = "flex";
+          msg.style.justifyContent =
+            sender === "bot" ? "flex-start" : "flex-end";
+
+          // INNER text container styles (this holds the bubble)
+          msgText.style.display = "inline-block";
+          msgText.style.padding = "10px 15px";
+          msgText.style.borderRadius = "20px";
+          msgText.style.lineHeight = "1.5";
+          msgText.style.whiteSpace = "pre-line";
+          msgText.style.fontSize = "14px";
+          msgText.style.color = sender === "bot" ? "white" : "black";
+          msgText.style.backgroundColor =
+            sender === "bot" ? "#844085" : "#f0f0f0";
+          msgText.style.textAlign = sender === "bot" ? "left" : "right";
+          msgText.style.wordWrap = "break-word";
+          msgText.style.maxWidth = "fit-content"; // wrap long text
+          // msgText.style.wordBreak = "break-all";
+
+          chatMessages.appendChild(msg);
+          chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: "smooth",
+          });
+
+          if (sender === "bot") {
+            botTyping = true;
+            const words = text.split(" ");
+            let index = 0;
+
+            document.querySelector(
+              "#chat-input-section button"
+            ).disabled = true;
+            document.querySelector("#chat-input").disabled = true;
+
+            const interval = setInterval(() => {
+              if (index < words.length) {
+                msgText.textContent += words[index] + " ";
+                chatMessages.scrollTo({
+                  top: chatMessages.scrollHeight,
+                  behavior: "smooth",
+                });
+                index++;
+              } else {
+                clearInterval(interval);
+                botTyping = false;
+                document.querySelector(
+                  "#chat-input-section button"
+                ).disabled = false;
+                document.querySelector("#chat-input").disabled = false;
+                document.querySelector("#chat-input").focus();
+                if (typeof callback === "function") callback();
+              }
+            }, 100);
+          } else {
+            console.log(chatCounter);
+            if (chatCounter <= 2) {
+           
+              document.querySelector("#chat-input").disabled = true;
+            }
+            chatCounter += 1;
+
+            msgText.textContent = text;
+          }
+        };
+
+        // Send Message
+        window.sendMessage = function () {
+          if (botTyping) return;
+
+          const message = chatInput.value.trim();
+          if (!message) return;
+
+          appendMessage(message, "user");
+          const charCountDisplay = document.getElementById("character-count");
+          charCountDisplay.textContent = `0 / 99`;
+
+          const typingIndicator = document.getElementById("typing-indicator");
+          typingIndicator.style.display = "block";
+          console.log(typingIndicator);
+          chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: "smooth",
+          });
+
+          chatInput.value = "";
+
+          botTyping = true;
+          document.querySelector("#chat-input-section button").disabled = true;
+          document.querySelector("#chat-input").disabled = true;
+          userDetails = JSON.parse(localStorage.getItem("userDetails"));
+          name = userDetails.name;
+          email = userDetails.email;
+          mobile = userDetails.mobile;
+
+          fetch("chatbot.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message, name, email, mobile }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              typingIndicator.style.display = "none";
+              appendMessage(data.reply, "bot");
+            })
+            .catch((err) => {
+              console.error(err);
+              typingIndicator.style.display = "none";
+
+              appendMessage("Oops! Something went wrong.", "bot");
+            });
+        };
+
+        // Handle Enter key
+        chatInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+      });
+      let startChatClicked = false; // initialize properly
+
+      function startChat() {
+        if (startChatClicked) return;
+
+        // Clear previous errors
+        document.getElementById("error-name").textContent = "";
+        document.getElementById("error-email").textContent = "";
+        document.getElementById("error-mobile").textContent = "";
+
+        const name = document.getElementById("user-name").value.trim();
+        const email = document.getElementById("user-email").value.trim();
+        const mobile = document.getElementById("user-mobile").value.trim();
+
+        let hasError = false;
+
+        if (!name) {
+          document.getElementById("error-name").textContent =
+            "Name is required.";
+          hasError = true;
+        } else if (
+          name.length < 3 ||
+          name.length > 20 ||
+          !/^[a-zA-Z\s]+$/.test(name)
+        ) {
+          document.getElementById("error-name").textContent =
+            "Please enter a valid name (3-20 letters only).";
+          hasError = true;
+        }
+        const emailPattern = /^[^;\s@]+@[^;\s@]+\.[^;\s@]{2,}$/;
+
+        if (!email) {
+          document.getElementById("error-email").textContent =
+            "Email is required.";
+          hasError = true;
+        } else if (!emailPattern.test(email)) {
+          document.getElementById("error-email").textContent =
+            "Please enter a valid email.";
+          hasError = true;
+        }
+
+        if (!mobile) {
+          document.getElementById("error-mobile").textContent =
+            "Contact number is required.";
+          hasError = true;
+        } else if (!/^\d{10}$/.test(mobile)) {
+          document.getElementById("error-mobile").textContent =
+            "Please enter a valid 10-digit mobile number.";
+          hasError = true;
+        }
+
+        if (hasError) return;
+
+        // Prevent double-click
+        startChatClicked = true;
+
+        const userDetails = { name, email, mobile };
+
+        fetch(`sheet.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userDetails),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === true) {
+              document.getElementById("user-form").style.display = "none";
+              document.getElementById("chat-messages").style.display = "block";
+              document.getElementById("chat-input-section").style.display =
+                "flex";
+
+              appendMessage(`Hi ${name}, how can I assist you today?`, "bot");
+              localStorage.setItem("userDetails", JSON.stringify(userDetails));
+            } else {
+              alert(data.error);
+            }
+          })
+          .catch((error) => {
+            alert("Something went wrong. Please try again.");
+            console.error(error);
+          })
+          .finally(() => {
+            startChatClicked = false;
+          });
+      }
+
+      const MAX_CHARACTERS = 99;
+
+      function updateCharacterCount() {
+        const input = document.getElementById("chat-input");
+        const charCountDisplay = document.getElementById("character-count"); // You might want to rename this ID for clarity
+
+        let text = input.value;
+
+        // If character count exceeds the max, trim the input
+        if (text.length > MAX_CHARACTERS) {
+          text = text.slice(0, MAX_CHARACTERS);
+          input.value = text;
+        }
+
+        // Update character count display
+        charCountDisplay.textContent = `${text.length} / ${MAX_CHARACTERS} `;
+      }
+    </script>
+  </body>
+</html>
