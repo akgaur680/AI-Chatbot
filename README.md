@@ -3,6 +3,7 @@
 
 This Chatbot is designed to Add the user details in Google Sheet & the send responses based on the website content.
 This is designed on the basis of a Wordpress Wesbite.
+Google Sheet & OpenAI completion & moderation APIs are integrated in this chatbot. 
 
 
 1. Composer Install
